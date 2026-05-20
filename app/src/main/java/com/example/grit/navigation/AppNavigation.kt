@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.grit.ui.screens.auth.LoginScreen
 import com.example.grit.ui.screens.auth.RegisterScreen
+import com.example.grit.ui.screens.home.HomeScreen
 
 @Composable
 fun AppNavigation() {
@@ -29,6 +30,19 @@ fun AppNavigation() {
                     navController.navigate(NavRoutes.HOME) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
                     }
+                }
+            )
+        }
+        composable(NavRoutes.HOME) {
+            HomeScreen(
+                onPropertyClick = { propertyId ->
+                    navController.navigate("detail/$propertyId")
+                },
+                onAddProperty = {
+                    navController.navigate(NavRoutes.FORM)
+                },
+                onProfileClick = {
+                    navController.navigate(NavRoutes.PROFILE)
                 }
             )
         }
