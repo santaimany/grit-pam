@@ -1,16 +1,20 @@
 package com.example.grit.data.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Property(
     val id: String = "",
-    val userId: String = "",
-    val namaProperti: String = "",
+    @SerialName("user_id")        val userId: String = "",
+    @SerialName("nama_properti")  val namaProperti: String = "",
     val provinsi: String = "",
-    val kabupatenKota: String = "",
+    @SerialName("kabupaten_kota") val kabupatenKota: String = "",
     val harga: Long = 0,
     val kategori: String = "",
-    val luasTanah: Int = 0,
+    @SerialName("luas_tanah")     val luasTanah: Int = 0,
     val deskripsi: String = "",
-    val createdAt: String = "",
-    val imageUrl: String = "",
-    val rating: Float = 0f
+    @SerialName("created_at")     val createdAt: String = "",
+    @kotlinx.serialization.Transient val imageUrl: String = "",
+    @kotlinx.serialization.Transient val rating: Float = 0f
 )

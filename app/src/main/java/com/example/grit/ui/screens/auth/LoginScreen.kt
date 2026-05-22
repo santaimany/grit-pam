@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -38,20 +40,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.grit.ui.components.GritLogo
 import com.example.grit.ui.theme.BorderGray
 import com.example.grit.ui.theme.GritGreen
 import com.example.grit.ui.theme.TextPrimary
 import com.example.grit.ui.theme.TextSecondary
+import com.example.grit.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -61,9 +70,7 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         GritLogo()
-
         Spacer(modifier = Modifier.height(12.dp))
-
         Text(
             text = "Silahkan masuk menggunakan Email dan\nPassword Anda.",
             fontSize = 14.sp,
@@ -71,67 +78,34 @@ fun LoginScreen(
             textAlign = TextAlign.Center,
             lineHeight = 20.sp
         )
-
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Email field
-        Text(
-            text = "Email",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextPrimary,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Text("Email", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             placeholder = { Text("Masukkan Email", color = TextSecondary.copy(alpha = 0.6f)) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
+            leadingIcon = { Icon(Icons.Default.Email, null, tint = TextSecondary, modifier = Modifier.size(20.dp)) },
             singleLine = true,
             shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = BorderGray,
-                focusedBorderColor = GritGreen
-            ),
+            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = GritGreen),
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Password field
-        Text(
-            text = "Password",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextPrimary,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Text("Password", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             placeholder = { Text("Masukkan Password", color = TextSecondary.copy(alpha = 0.6f)) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(20.dp)
-                )
-            },
+            leadingIcon = { Icon(Icons.Default.Lock, null, tint = TextSecondary, modifier = Modifier.size(20.dp)) },
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Sembunyikan password" else "Tampilkan password",
+                        contentDescription = null,
                         tint = TextSecondary
                     )
                 }
@@ -139,38 +113,35 @@ fun LoginScreen(
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             singleLine = true,
             shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = BorderGray,
-                focusedBorderColor = GritGreen
-            ),
+            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = BorderGray, focusedBorderColor = GritGreen),
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = errorMessage!!, color = Color(0xFFE53935), fontSize = 13.sp)
+        }
 
+        Spacer(modifier = Modifier.height(28.dp))
         Button(
-            onClick = onLoginSuccess,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
+            onClick = { viewModel.login(email, password, onLoginSuccess) },
+            enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
+            modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = GritGreen)
         ) {
-            Text(
-                text = "Masuk",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text("Masuk", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
-
         Text(
             text = buildAnnotatedString {
                 append("Belum memiliki akun? ")
-                withStyle(SpanStyle(color = GritGreen, fontWeight = FontWeight.SemiBold)) {
-                    append("Buat Akun")
-                }
+                withStyle(SpanStyle(color = GritGreen, fontWeight = FontWeight.SemiBold)) { append("Buat Akun") }
             },
             fontSize = 14.sp,
             color = TextSecondary,

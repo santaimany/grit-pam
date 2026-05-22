@@ -19,12 +19,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,20 +36,31 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.grit.ui.components.BottomNavTab
 import com.example.grit.ui.components.GritBottomBar
 import com.example.grit.ui.theme.BorderGray
 import com.example.grit.ui.theme.TextPrimary
 import com.example.grit.ui.theme.TextSecondary
+import com.example.grit.viewmodel.AuthViewModel
+import com.example.grit.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
     onMyFarmlandClick: () -> Unit,
+    onTransaksiClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onHomeClick: () -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    profileViewModel: ProfileViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
+    val userProfile by profileViewModel.userProfile.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { profileViewModel.loadProfile() }
+
     Scaffold(
         bottomBar = {
             GritBottomBar(
@@ -64,7 +78,6 @@ fun ProfileScreen(
                 .padding(innerPadding)
                 .statusBarsPadding()
         ) {
-            // Title
             Text(
                 text = "Akun Kamu",
                 fontSize = 20.sp,
@@ -73,7 +86,6 @@ fun ProfileScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)
             )
 
-            // Profile card
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,10 +95,7 @@ fun ProfileScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(BorderGray),
+                    modifier = Modifier.size(60.dp).clip(CircleShape).background(BorderGray),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -98,13 +107,13 @@ fun ProfileScreen(
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "Ahsanta Khalqi Imany",
+                        text = userProfile?.name ?: "—",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
-                        text = "santa@gmail.com",
+                        text = userProfile?.email ?: "—",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -113,7 +122,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Pengaturan Umum section
             Text(
                 text = "Pengaturan Umum",
                 fontSize = 13.sp,
@@ -134,37 +142,43 @@ fun ProfileScreen(
                     iconTint = TextPrimary,
                     onClick = onMyFarmlandClick
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(1.dp)
-                        .background(BorderGray)
+                Divider()
+                SettingsMenuItem(
+                    icon = Icons.Default.MonetizationOn,
+                    label = "Transaksi",
+                    iconTint = TextPrimary,
+                    onClick = onTransaksiClick
                 )
+                Divider()
                 SettingsMenuItem(
                     icon = Icons.Default.Settings,
                     label = "Edit Profile",
                     iconTint = TextPrimary,
                     onClick = onEditProfileClick
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(1.dp)
-                        .background(BorderGray)
-                )
+                Divider()
                 SettingsMenuItem(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     label = "Keluar Aplikasi",
                     iconTint = Color(0xFFE53935),
                     labelColor = Color(0xFFE53935),
                     showChevron = false,
-                    onClick = onLogoutClick
+                    onClick = { authViewModel.logout(onLogoutClick) }
                 )
             }
         }
     }
+}
+
+@Composable
+private fun Divider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .height(1.dp)
+            .background(BorderGray)
+    )
 }
 
 @Composable
@@ -184,12 +198,7 @@ private fun SettingsMenuItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconTint,
-            modifier = Modifier.size(20.dp)
-        )
+        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
         Text(
             text = label,
             fontSize = 14.sp,

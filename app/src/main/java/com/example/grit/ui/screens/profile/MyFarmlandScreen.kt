@@ -29,11 +29,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,47 +49,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.grit.data.model.Property
 import com.example.grit.ui.theme.BorderGray
 import com.example.grit.ui.theme.GritGreen
 import com.example.grit.ui.theme.TextPrimary
 import com.example.grit.ui.theme.TextSecondary
+import com.example.grit.viewmodel.PropertyViewModel
 import java.text.NumberFormat
 import java.util.Locale
-
-private val dummyMyProperties = listOf(
-    Property(
-        id = "1",
-        namaProperti = "Lahan Perkebunan Teh",
-        provinsi = "Banten",
-        kabupatenKota = "Tangerang Selatan",
-        harga = 70_000_000,
-        kategori = "Perkebunan",
-        luasTanah = 1100,
-        imageUrl = "",
-        rating = 4.9f
-    ),
-    Property(
-        id = "2",
-        namaProperti = "Peternakan Unggas",
-        provinsi = "Jawa Timur",
-        kabupatenKota = "Surabaya",
-        harga = 80_000_000,
-        kategori = "Peternakan",
-        luasTanah = 700,
-        imageUrl = "",
-        rating = 4.9f
-    ),
-)
 
 @Composable
 fun MyFarmlandScreen(
     onBack: () -> Unit,
     onEditProperty: (String) -> Unit,
-    onDeleteProperty: (String) -> Unit = {}
+    onDeleteProperty: (String) -> Unit = {},
+    viewModel: PropertyViewModel = viewModel()
 ) {
+    val myProperties by viewModel.myProperties.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     var propertyToDelete by remember { mutableStateOf<Property?>(null) }
+
+    LaunchedEffect(Unit) { viewModel.loadMyProperties() }
 
     Column(
         modifier = Modifier
@@ -118,17 +103,23 @@ fun MyFarmlandScreen(
             )
         }
 
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(dummyMyProperties) { property ->
-                MyFarmlandCard(
-                    property = property,
-                    onEdit = { onEditProperty(property.id) },
-                    onDelete = { propertyToDelete = property }
-                )
+        if (isLoading && myProperties.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = GritGreen)
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(myProperties) { property ->
+                    MyFarmlandCard(
+                        property = property,
+                        onEdit = { onEditProperty(property.id) },
+                        onDelete = { propertyToDelete = property }
+                    )
+                }
             }
         }
     }
@@ -136,22 +127,16 @@ fun MyFarmlandScreen(
     propertyToDelete?.let { property ->
         AlertDialog(
             onDismissRequest = { propertyToDelete = null },
-            title = {
-                Text("Hapus Properti", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Text("Yakin ingin menghapus \"${property.namaProperti}\"? Tindakan ini tidak dapat dibatalkan.")
-            },
+            title = { Text("Hapus Properti", fontWeight = FontWeight.Bold) },
+            text = { Text("Yakin ingin menghapus \"${property.namaProperti}\"? Tindakan ini tidak dapat dibatalkan.") },
             confirmButton = {
                 Button(
                     onClick = {
-                        onDeleteProperty(property.id)
+                        viewModel.deleteProperty(property.id)
                         propertyToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
-                ) {
-                    Text("Hapus", color = Color.White)
-                }
+                ) { Text("Hapus", color = Color.White) }
             },
             dismissButton = {
                 OutlinedButton(onClick = { propertyToDelete = null }) {
@@ -170,9 +155,7 @@ private fun MyFarmlandCard(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(130.dp),
+        modifier = Modifier.fillMaxWidth().height(130.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -182,17 +165,10 @@ private fun MyFarmlandCard(
                 model = property.imageUrl,
                 contentDescription = property.namaProperti,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(120.dp)
-                    .fillMaxHeight()
-                    .background(BorderGray)
+                modifier = Modifier.width(120.dp).fillMaxHeight().background(BorderGray)
             )
-
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(12.dp)
+                modifier = Modifier.weight(1f).fillMaxHeight().padding(12.dp)
             ) {
                 Text(
                     text = property.namaProperti,
@@ -202,18 +178,14 @@ private fun MyFarmlandCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Text(
                     text = "Rp${NumberFormat.getNumberInstance(Locale("id", "ID")).format(property.harga)}/musim",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = GritGreen
                 )
-
                 Spacer(modifier = Modifier.weight(1f))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -230,45 +202,23 @@ private fun MyFarmlandCard(
                             modifier = Modifier.size(14.dp),
                             tint = TextSecondary
                         )
-                        Text(
-                            text = "${property.luasTanah} m²",
-                            fontSize = 12.sp,
-                            color = TextSecondary
-                        )
+                        Text(text = "${property.luasTanah} m²", fontSize = 12.sp, color = TextSecondary)
                     }
-
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(GritGreen.copy(alpha = 0.1f)),
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(GritGreen.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
                             IconButton(onClick = onEdit) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Edit,
-                                    contentDescription = "Edit",
-                                    tint = GritGreen,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                                Icon(Icons.Rounded.Edit, "Edit", tint = GritGreen, modifier = Modifier.size(16.dp))
                             }
                         }
-
                         Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFFEBEE)),
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFFFEBEE)),
                             contentAlignment = Alignment.Center
                         ) {
                             IconButton(onClick = onDelete) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Delete,
-                                    contentDescription = "Hapus",
-                                    tint = Color(0xFFE53935),
-                                    modifier = Modifier.size(16.dp)
-                                )
+                                Icon(Icons.Rounded.Delete, "Hapus", tint = Color(0xFFE53935), modifier = Modifier.size(16.dp))
                             }
                         }
                     }
