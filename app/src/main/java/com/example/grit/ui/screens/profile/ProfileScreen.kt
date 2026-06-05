@@ -107,13 +107,13 @@ fun ProfileScreen(
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = userProfile?.name ?: "—",
+                        text = userProfile?.name?.takeIf { it.isNotEmpty() } ?: "—",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
-                        text = userProfile?.email ?: "—",
+                        text = userProfile?.email?.takeIf { it.isNotEmpty() } ?: "—",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )

@@ -44,7 +44,8 @@ import java.util.Locale
 @Composable
 fun PropertyCard(
     property: Property,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isRented: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -66,29 +67,43 @@ fun PropertyCard(
                         .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                 )
 
+                // Overlay gelap saat sedang disewakan
+                if (isRented) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                            .background(Color.Black.copy(alpha = 0.45f))
+                    )
+                }
+
+                // Badge kategori (kiri atas)
                 Row(
                     modifier = Modifier
                         .padding(12.dp)
-                        .background(
-                            color = Color.White.copy(alpha = 0.9f),
-                            shape = RoundedCornerShape(6.dp)
-                        )
+                        .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 6.dp)
                         .align(Alignment.TopStart),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.GridView,
-                        contentDescription = null,
-                        modifier = Modifier.size(12.dp),
-                        tint = TextPrimary
-                    )
+                    Icon(Icons.Default.GridView, null, modifier = Modifier.size(12.dp), tint = TextPrimary)
+                    Text(property.kategori, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                }
+
+                // Badge "Sedang Disewakan" (kanan atas)
+                if (isRented) {
                     Text(
-                        text = property.kategori,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary
+                        text = "Sedang Disewakan",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .padding(12.dp)
+                            .background(Color(0xFFE53935), RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 5.dp)
+                            .align(Alignment.TopEnd)
                     )
                 }
             }

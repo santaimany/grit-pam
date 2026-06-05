@@ -2,10 +2,13 @@ package com.example.grit.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.grit.ui.screens.auth.LoginScreen
+import com.example.grit.ui.screens.form.FormScreen
 import com.example.grit.ui.screens.auth.RegisterScreen
 import com.example.grit.ui.screens.detail.DetailScreen
 import com.example.grit.ui.screens.home.HomeScreen
@@ -20,7 +23,6 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
     LaunchedEffect(Unit) {
-        supabase.auth.awaitInitialization()
         if (supabase.auth.currentSessionOrNull() != null) {
             navController.navigate(NavRoutes.HOME) {
                 popUpTo(NavRoutes.LOGIN) { inclusive = true }
@@ -56,11 +58,26 @@ fun AppNavigation() {
                 onBack = { navController.popBackStack() }
             )
         }
+        composable(
+            route = NavRoutes.FORM,
+            arguments = listOf(navArgument("propertyId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val propertyId = backStackEntry.arguments?.getString("propertyId")
+            FormScreen(
+                propertyId = propertyId,
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
         composable(NavRoutes.TRANSAKSI) {
             TransaksiScreen(
                 onBack = { navController.popBackStack() },
                 onHomeClick = { navController.navigate(NavRoutes.HOME) { popUpTo(NavRoutes.HOME) { inclusive = true } } },
-                onAddClick = { navController.navigate(NavRoutes.FORM) }
+                onAddClick = { navController.navigate("form") }
             )
         }
         composable(NavRoutes.PROFILE) {
@@ -74,7 +91,7 @@ fun AppNavigation() {
                     }
                 },
                 onHomeClick = { navController.navigate(NavRoutes.HOME) { popUpTo(NavRoutes.HOME) { inclusive = true } } },
-                onAddClick = { navController.navigate(NavRoutes.FORM) }
+                onAddClick = { navController.navigate("form") }
             )
         }
         composable(NavRoutes.MY_FARMLAND) {
@@ -86,7 +103,7 @@ fun AppNavigation() {
         composable(NavRoutes.HOME) {
             HomeScreen(
                 onPropertyClick = { propertyId -> navController.navigate("detail/$propertyId") },
-                onAddProperty = { navController.navigate(NavRoutes.FORM) },
+                onAddProperty = { navController.navigate("form") },
                 onProfileClick = { navController.navigate(NavRoutes.PROFILE) }
             )
         }

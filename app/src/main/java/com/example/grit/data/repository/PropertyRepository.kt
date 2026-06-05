@@ -2,10 +2,12 @@ package com.example.grit.data.repository
 
 import com.example.grit.data.model.Property
 import com.example.grit.data.model.PropertyImage
+import com.example.grit.data.model.UserProfile
 import com.example.grit.utils.supabase
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.storage.storage
 
 class PropertyRepository {
 
@@ -24,9 +26,24 @@ class PropertyRepository {
             .select { filter { eq("id", id) } }
             .decodeSingle()
 
-    suspend fun insert(property: Property) {
+    suspend fun insert(property: Property): String {
         val userId = supabase.auth.currentUserOrNull()?.id ?: error("Not authenticated")
-        supabase.from("properties").insert(property.copy(userId = userId))
+        return supabase.from("properties")
+            .insert(property.copy(userId = userId)) { select() }
+            .decodeSingle<Property>()
+            .id
+    }
+
+    suspend fun uploadImage(userId: String, propertyId: String, urutan: Int, bytes: ByteArray): String {
+        val path = "$userId/$propertyId/$urutan.jpg"
+        supabase.storage.from("property-images").upload(path, bytes) { upsert = true }
+        return supabase.storage.from("property-images").publicUrl(path)
+    }
+
+    suspend fun upsertImage(propertyId: String, fotoUrl: String, urutan: Int) {
+        supabase.from("property_images").upsert(
+            PropertyImage(propertyId = propertyId, fotoUrl = fotoUrl, urutan = urutan)
+        ) { onConflict = "property_id,urutan" }
     }
 
     suspend fun update(property: Property) {
@@ -55,6 +72,12 @@ class PropertyRepository {
         supabase.from("property_images")
             .select { filter { eq("property_id", propertyId) } }
             .decodeList()
+
+    suspend fun getOwnerName(userId: String): String? =
+        supabase.from("user_profiles")
+            .select { filter { eq("id", userId) } }
+            .decodeSingleOrNull<UserProfile>()
+            ?.name
 
     fun currentUserId(): String? = supabase.auth.currentUserOrNull()?.id
 }

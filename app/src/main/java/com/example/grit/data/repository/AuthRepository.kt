@@ -5,6 +5,9 @@ import com.example.grit.utils.supabase
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+
 
 class AuthRepository {
 
@@ -16,14 +19,12 @@ class AuthRepository {
     }
 
     suspend fun register(email: String, password: String, name: String) {
+        // name dikirim via metadata — trigger on auth.users otomatis insert ke user_profiles
         supabase.auth.signUpWith(Email) {
             this.email = email
             this.password = password
+            this.data = buildJsonObject { put("name", name) }
         }
-        val userId = supabase.auth.currentUserOrNull()?.id ?: return
-        supabase.from("user_profiles").insert(
-            UserProfile(id = userId, name = name, email = email)
-        )
     }
 
     suspend fun logout() {

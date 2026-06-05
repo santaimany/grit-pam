@@ -24,18 +24,24 @@ import com.example.grit.ui.components.GritTopBar
 import com.example.grit.ui.components.PropertyCard
 import com.example.grit.ui.theme.GritGreen
 import com.example.grit.viewmodel.PropertyViewModel
+import com.example.grit.viewmodel.TransactionViewModel
 
 @Composable
 fun HomeScreen(
     onPropertyClick: (String) -> Unit,
     onAddProperty: () -> Unit,
     onProfileClick: () -> Unit,
-    viewModel: PropertyViewModel = viewModel()
+    viewModel: PropertyViewModel = viewModel(),
+    transactionViewModel: TransactionViewModel = viewModel()
 ) {
     val properties by viewModel.properties.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val activePropertyIds by transactionViewModel.activePropertyIds.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.loadProperties() }
+    LaunchedEffect(Unit) {
+        viewModel.loadProperties()
+        transactionViewModel.loadActivePropertyIds()
+    }
 
     Scaffold(
         topBar = { GritTopBar() },
@@ -63,7 +69,11 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(properties) { property ->
-                    PropertyCard(property = property, onClick = { onPropertyClick(property.id) })
+                    PropertyCard(
+                        property = property,
+                        onClick = { onPropertyClick(property.id) },
+                        isRented = property.id in activePropertyIds
+                    )
                 }
             }
         }

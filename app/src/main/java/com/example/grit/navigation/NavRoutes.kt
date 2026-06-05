@@ -8,4 +8,5 @@ object NavRoutes {
     const val FORM = "form?propertyId={propertyId}"
     const val PROFILE = "profile"
     const val MY_FARMLAND = "my_farmland"
+    const val TRANSAKSI = "transaksi"
 }
