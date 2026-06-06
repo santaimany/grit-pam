@@ -36,6 +36,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -82,6 +85,7 @@ fun DetailScreen(
     val txError by transactionViewModel.errorMessage.collectAsStateWithLifecycle()
     var expanded by remember { mutableStateOf(false) }
     var showSewaDialog by remember { mutableStateOf(false) }
+    var fullscreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(propertyId) {
         viewModel.loadProperty(propertyId)
@@ -89,6 +93,39 @@ fun DetailScreen(
     }
 
     val isOwner = property != null && property!!.userId == transactionViewModel.currentUserId
+
+    // Full-screen image viewer
+    fullscreenImageUrl?.let { url ->
+        Dialog(
+            onDismissRequest = { fullscreenImageUrl = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { fullscreenImageUrl = null }
+            ) {
+                AsyncImage(
+                    model = url,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+                IconButton(
+                    onClick = { fullscreenImageUrl = null },
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(12.dp)
+                        .size(40.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color.White)
+                }
+            }
+        }
+    }
 
     if (showSewaDialog && property != null) {
         val p = property!!
@@ -218,6 +255,7 @@ fun DetailScreen(
                         .fillMaxWidth()
                         .height(280.dp)
                         .background(Color(0xFFF0F0F0))
+                        .clickable { if (coverUrl.isNotEmpty()) fullscreenImageUrl = coverUrl }
                 )
 
                 IconButton(
@@ -366,7 +404,7 @@ fun DetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                         val slots = images.take(3)
-                        slots.forEach { img -> GallerySlot(url = img.fotoUrl) }
+                        slots.forEach { img -> GallerySlot(url = img.fotoUrl, onClick = { fullscreenImageUrl = img.fotoUrl }) }
                         repeat(3 - slots.size) { GallerySlot(url = null) }
                     }
                     Spacer(modifier = Modifier.height(20.dp))
@@ -377,7 +415,7 @@ fun DetailScreen(
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.GallerySlot(url: String?) {
+private fun androidx.compose.foundation.layout.RowScope.GallerySlot(url: String?, onClick: () -> Unit = {}) {
     if (url != null) {
         AsyncImage(
             model = url,
@@ -388,6 +426,7 @@ private fun androidx.compose.foundation.layout.RowScope.GallerySlot(url: String?
                 .height(80.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFFF5F5F5))
+                .clickable { onClick() }
         )
     } else {
         Box(modifier = Modifier.weight(1f).height(80.dp))
